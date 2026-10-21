@@ -1,0 +1,1053 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片压缩工具</title>
+<meta name="description" content="纯前端图片压缩工具：有损 / 无损双模式，单张精调 + 批量打包下载，图片不上传、全部本地处理。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Cpath d='M16 6l5.5 5.5h-3.5v6h-4v-6H10.5z' fill='%23fff'/%3E%3Crect x='8.5' y='21' width='15' height='4' rx='1.6' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f7f8fa; --card:#fff; --border:#e2e6ec; --text:#1a1a2e; --text-sec:#6b7280;
+  --primary:#4f46e5; --primary-hover:#4338ca; --success:#059669; --danger:#ef4444;
+  --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 60px}
+header{text-align:center;padding:28px 20px 8px}
+header h1{font-size:24px;font-weight:700}
+header p{color:var(--text-sec);font-size:14px;margin-top:4px}
+.tabs{display:flex;justify-content:center;gap:4px;margin-top:18px}
+.tab{flex:1;max-width:280px;padding:12px 20px;border:1px solid var(--border);border-bottom:none;background:transparent;border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;font-size:15px;color:var(--text-sec);transition:all .15s}
+.tab.active{background:var(--card);color:var(--primary);font-weight:600}
+.tab:hover:not(.active){background:#f0f1f3}
+.panel{display:none;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow)}
+.panel.active{display:block}
+.upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:44px 20px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-area:hover,.upload-area.dragover{border-color:var(--primary);background:#f5f3ff}
+.upload-area p{font-size:16px;font-weight:500}
+.upload-area .hint{color:var(--text-sec);font-size:13px;margin-top:4px}
+.upload-area.compact{padding:14px 18px;border-style:solid;background:#fbfbfd}
+.upload-area.compact p{font-size:13.5px;font-weight:400;color:var(--text-sec)}
+.upload-area.compact .hint{display:none}
+.workspace{display:grid;grid-template-columns:1fr 250px 1fr;gap:18px;margin-top:22px;align-items:start}
+@media(max-width:900px){.workspace{grid-template-columns:1fr}}
+.col h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.preview-box{border:1px solid var(--border);border-radius:8px;background:#f9fafb;min-height:170px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.preview-box img{max-width:100%;max-height:280px;display:block}
+.preview-box .ph{color:var(--text-sec);font-size:13px;padding:20px;text-align:center}
+.info{font-size:13px;color:var(--text-sec);margin-top:10px;line-height:1.95;word-break:break-all}
+.info b{color:var(--text);font-weight:600}
+.cut{color:var(--success);font-weight:600}
+.grow{color:#d97706;font-weight:600}
+.same{color:var(--text-sec);font-weight:600}
+.span-all{grid-column:1/-1}
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:8px 6px;border:none;background:#fff;font-size:13.5px;color:var(--text-sec);cursor:pointer;font-family:inherit;transition:all .15s}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:#eef2ff;color:var(--primary);font-weight:600}
+.note-box{background:#f5f7ff;border:1px solid #dbe2ff;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#4b5563;line-height:1.75}
+.note-box b{color:var(--text)}
+.field{margin-bottom:13px}
+.field>label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:5px}
+.field select,.field input[type=number],.field input[type=text]{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:#fff;color:var(--text);outline:none}
+.field select:focus,.field input[type=number]:focus{border-color:var(--primary)}
+.field input[type=range]{width:100%;accent-color:var(--primary)}
+.range-row{display:flex;align-items:center;gap:9px}
+.range-row input[type=range]{flex:1;min-width:0}
+.range-row input[type=number]{width:62px;flex:none;text-align:center}
+.inline-hint{font-size:12px;color:var(--text-sec);margin-top:5px;line-height:1.6}
+.field>label.checkline{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;margin-bottom:8px}
+.field>label.checkline input{accent-color:var(--primary);width:16px;height:16px;flex:none}
+.target-inputs{display:flex;gap:8px}
+.target-inputs input{flex:1}
+.target-inputs select{width:80px;flex:none}
+.btn-primary{display:inline-block;padding:10px 24px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;width:100%}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-remove{display:inline-block;margin-top:10px;padding:8px 16px;background:#fff;color:var(--text-sec);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-remove:hover{border-color:var(--danger);color:var(--danger);background:#fef2f2}
+#s-run{margin-top:4px}
+#s-download{margin-top:12px}
+#b-params{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:2px 22px;margin-bottom:6px}
+@media(max-width:900px){#b-params{grid-template-columns:1fr}}
+.row-actions{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.row-actions .btn-primary{width:auto}
+.count{font-size:13px;color:var(--text-sec)}
+.progress-bar{position:relative;width:100%;height:30px;background:#f0f1f3;border-radius:8px;overflow:hidden;margin-top:14px}
+.progress-fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,var(--primary),#818cf8);width:0;transition:width .2s}
+.progress-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12.5px;font-weight:500;white-space:nowrap;max-width:96%;overflow:hidden;text-overflow:ellipsis}
+.list{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:14px;max-height:420px;overflow-y:auto}
+.item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.item:last-child{border-bottom:none}
+.item .thumb{width:50px;height:50px;border-radius:6px;background:#f0f1f3;flex:none;object-fit:cover;display:block}
+.item .meta{flex:1;min-width:0}
+.item .name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .nums{color:var(--text-sec);margin-top:2px;font-size:12.5px}
+.item .st{flex:none;font-size:12px;color:var(--text-sec);white-space:nowrap}
+.item .st.ok{color:var(--success)}
+.item .st.err{color:var(--danger)}
+.hidden{display:none!important}
+footer{margin-top:26px;color:var(--text-sec);font-size:12px;text-align:center;line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>图片压缩工具</h1>
+  <p>压缩图片体积，画质自己掌控 · 纯本地处理，文件不上传</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="single">单张压缩</div>
+  <div class="tab" data-tab="batch">批量压缩</div>
+</div>
+
+<section class="panel active" id="panel-single">
+  <div class="upload-area" id="s-drop">
+    <p>点击选择图片，或把图片拖到这里</p>
+    <div class="hint">支持 JPG / PNG / WebP 等常见图片格式</div>
+    <input type="file" id="s-file" accept="image/*" hidden>
+  </div>
+
+  <div class="workspace hidden" id="s-work">
+    <div class="col">
+      <h3>① 原图</h3>
+      <div class="preview-box"><img id="s-origin-img" alt="原图"></div>
+      <div class="info" id="s-origin-info"></div>
+      <button class="btn-remove" id="s-reset">重新选择图片</button>
+    </div>
+    <div class="col">
+      <h3>② 压缩设置</h3>
+      <div id="s-params"></div>
+      <button class="btn-primary" id="s-run">开始压缩</button>
+    </div>
+    <div class="col">
+      <h3>③ 压缩结果</h3>
+      <div class="preview-box" id="s-result-box"><div class="ph">压缩后的图片会显示在这里</div></div>
+      <div class="info" id="s-result-info"></div>
+      <button class="btn-primary hidden" id="s-download">下载压缩后的图片</button>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="panel-batch">
+  <div class="upload-area" id="b-drop">
+    <p>点击选择多张图片，或把图片（可多选 / 整个文件夹）拖到这里</p>
+    <div class="hint">一次可处理上百张，全部在你电脑里完成</div>
+    <input type="file" id="b-file" accept="image/*" multiple hidden>
+  </div>
+
+  <div class="hidden" id="b-work">
+    <div id="b-params"></div>
+    <div class="row-actions">
+      <button class="btn-primary" id="b-run">开始批量压缩</button>
+      <button class="btn-remove" id="b-clear" style="margin-top:0">清空列表</button>
+      <span class="count" id="b-count"></span>
+    </div>
+    <div class="progress-bar hidden" id="b-progress">
+      <div class="progress-fill" id="b-fill"></div>
+      <div class="progress-text" id="b-text"></div>
+    </div>
+    <div class="list" id="b-list"></div>
+    <div class="row-actions">
+      <button class="btn-primary hidden" id="b-zip">打包下载 zip</button>
+    </div>
+  </div>
+</section>
+
+<footer>纯本地 · 双击即用 · 文件不上传 · 有损压缩画质不可逆，建议保留原图；无损模式不改动任何画质</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const KB = 1024, MB = KB * 1024;
+
+function fmtBytes(n){
+  if(n === null || n === undefined) return '-';
+  if(n < KB) return n + ' B';
+  if(n < MB) return (n / KB).toFixed(1) + ' KB';
+  return (n / MB).toFixed(2) + ' MB';
+}
+function fmtDim(w, h){ return w + ' × ' + h; }
+function pct(before, after){
+  if(!before) return '';
+  const d = (1 - after / before) * 100;
+  return (d >= 0 ? '↓ ' : '↑ ') + Math.abs(d).toFixed(1) + '%';
+}
+function pctHTML(before, after){
+  if(!before) return '';
+  const d = (1 - after / before) * 100;
+  const up = d < 0;
+  return '<span class="' + (up ? 'grow' : 'cut') + '">' + (up ? '↑ ' : '↓ ') + Math.abs(d).toFixed(1) + '%</span>';
+}
+function diffHTML(before, after){
+  if(!before) return '';
+  if(after === before) return '<span class="same">无变化</span>';
+  return pctHTML(before, after);
+}
+function fileFormatLabel(file){
+  const ext = (file.name.split('.').pop() || '').toUpperCase();
+  if(ext === 'JPG' || ext === 'JPEG' || ext === 'JPE') return 'JPG';
+  if(ext === 'PNG') return 'PNG';
+  if(ext === 'WEBP') return 'WebP';
+  return ext || (file.type || '').replace('image/', '').toUpperCase() || '未知';
+}
+function baseName(name){ return name.replace(/\.[^.]+$/, ''); }
+function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function extOf(format){ return format === 'image/jpeg' ? 'jpg' : format === 'image/webp' ? 'webp' : 'png'; }
+function typeLabel(format){ return format === 'image/jpeg' ? 'JPG' : format === 'image/webp' ? 'WebP' : 'PNG'; }
+
+function loadImageFromFile(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+    img.src = url;
+  });
+}
+
+function calcDims(nw, nh, opt){
+  if(opt.mode === 'percent'){
+    const r = Math.max(1, Math.min(100, opt.percent || 100)) / 100;
+    return { w: Math.max(1, Math.round(nw * r)), h: Math.max(1, Math.round(nh * r)) };
+  }
+  if(opt.mode === 'setwidth' && opt.setW > 0){
+    return { w: Math.max(1, Math.round(opt.setW)), h: Math.max(1, Math.round(opt.setW * nh / nw)) };
+  }
+  if(opt.mode === 'setheight' && opt.setH > 0){
+    return { w: Math.max(1, Math.round(opt.setH * nw / nh)), h: Math.max(1, Math.round(opt.setH)) };
+  }
+  return { w: nw, h: nh };
+}
+
+function encode(img, format, quality, w, h){
+  return new Promise(resolve => {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if(format === 'image/jpeg'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+    ctx.drawImage(img, 0, 0, w, h);
+    const q = format === 'image/png' ? undefined : quality;
+    c.toBlob(b => resolve(b), format, q);
+  });
+}
+
+async function compressToTarget(img, format, targetBytes, dims){
+  const lossless = format === 'image/png';
+  let w = dims.w, h = dims.h;
+  let last = null;
+  for(let dimIter = 0; dimIter < 4; dimIter++){
+    if(lossless){
+      const b = await encode(img, format, undefined, w, h);
+      if(!b) throw new Error('该浏览器不支持这种格式');
+      last = { blob: b, w, h };
+      if(b.size <= targetBytes) return last;
+      const r = Math.sqrt(targetBytes / b.size) * 0.97;
+      if(r >= 0.995) return last;
+      w = Math.max(1, Math.floor(w * r));
+      h = Math.max(1, Math.floor(h * r));
+      continue;
+    }
+    const minB = await encode(img, format, 0.01, w, h);
+    if(!minB) throw new Error('该浏览器不支持这种格式');
+    if(minB.size > targetBytes){
+      const r = Math.sqrt(targetBytes / minB.size) * 0.97;
+      if(r >= 0.995) return { blob: minB, w, h };
+      w = Math.max(1, Math.floor(w * r));
+      h = Math.max(1, Math.floor(h * r));
+      continue;
+    }
+    let lo = 0.01, hi = 1, best = minB;
+    for(let i = 0; i < 8; i++){
+      const mid = (lo + hi) / 2;
+      const b = await encode(img, format, mid, w, h);
+      if(!b) break;
+      if(b.size <= targetBytes){ best = b; lo = mid; }
+      else { hi = mid; }
+      if(hi - lo < 0.02) break;
+    }
+    return { blob: best, w, h };
+  }
+  return last;
+}
+
+async function compressImage(img, opt){
+  const dims = calcDims(img.naturalWidth, img.naturalHeight, opt);
+  if(opt.targetBytes > 0){
+    return await compressToTarget(img, opt.format, opt.targetBytes, dims);
+  }
+  const blob = await encode(img, opt.format, opt.quality, dims.w, dims.h);
+  if(!blob) throw new Error('该浏览器不支持这种输出格式，请换 JPG 试试');
+  return { blob, w: dims.w, h: dims.h };
+}
+
+function makeThumb(blob, max){
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(max / img.width, max / img.height, 1);
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * r));
+      c.height = Math.max(1, Math.round(img.height * r));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(''); };
+    img.src = url;
+  });
+}
+
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function setupDrop(el, onFiles){
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('dragover');
+    const files = [...e.dataTransfer.files];
+    if(files.length) onFiles(files);
+  });
+}
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf){
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZip(files){
+  const enc = new TextEncoder();
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  const parts = [], central = [];
+  let offset = 0;
+  for(const f of files){
+    const nameBytes = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0x0800, true);
+    lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosTime, true);
+    lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, size, true);
+    lh.setUint32(22, size, true);
+    lh.setUint16(26, nameBytes.length, true);
+    lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), nameBytes, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true);
+    ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true);
+    ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, size, true);
+    ch.setUint32(24, size, true);
+    ch.setUint16(28, nameBytes.length, true);
+    ch.setUint16(30, 0, true);
+    ch.setUint16(32, 0, true);
+    ch.setUint16(34, 0, true);
+    ch.setUint16(36, 0, true);
+    ch.setUint32(38, 0, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), nameBytes);
+    offset += 30 + nameBytes.length + size;
+  }
+  let cdSize = 0;
+  central.forEach(c => cdSize += c.length);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(4, 0, true);
+  eocd.setUint16(6, 0, true);
+  eocd.setUint16(8, files.length, true);
+  eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true);
+  eocd.setUint32(16, offset, true);
+  eocd.setUint16(20, 0, true);
+  return new Blob([...parts, ...central, new Uint8Array(eocd.buffer)], { type: 'application/zip' });
+}
+
+// ==== LOSSLESS-ENGINE-START ====
+// 纯 JS 无损优化：不改任何一个像素，只剥离元数据 + PNG 重新无损压缩。
+// JPEG：丢弃 EXIF / XMP / 注释等 APPn、COM 段（图像数据原样保留）
+// PNG ：丢弃 tEXt / zTXt / iTXt / tIME / eXIf，并重做行滤波 + deflate 重压
+// WebP：丢弃 EXIF / XMP 块（RIFF 容器，字节级裁剪）
+
+function sniffFormat(u8){
+  if(u8.length > 3 && u8[0] === 0xFF && u8[1] === 0xD8 && u8[2] === 0xFF) return 'jpeg';
+  if(u8.length > 8 && u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4E && u8[3] === 0x47) return 'png';
+  if(u8.length > 12 && u8[0] === 0x52 && u8[1] === 0x49 && u8[2] === 0x46 && u8[3] === 0x46 &&
+     u8[8] === 0x57 && u8[9] === 0x45 && u8[10] === 0x42 && u8[11] === 0x50) return 'webp';
+  return 'unknown';
+}
+function u16be(u8, p){ return (u8[p] << 8) | u8[p+1]; }
+function u32be(u8, p){ return u8[p]*16777216 + ((u8[p+1] << 16) | (u8[p+2] << 8) | u8[p+3]); }
+function u32le(u8, p){ return u8[p] + (u8[p+1] << 8) + (u8[p+2] << 16) + u8[p+3]*16777216; }
+
+function exifOrientation(u8, segStart, segEnd){
+  let p = segStart + 4;
+  if(p + 6 > segEnd) return 0;
+  if(!(u8[p] === 0x45 && u8[p+1] === 0x78 && u8[p+2] === 0x69 && u8[p+3] === 0x66)) return 0;
+  p += 6;
+  if(p + 8 > segEnd) return 0;
+  const le = u8[p + 1] === 0x49;
+  const rd16 = q => le ? (u8[q] | (u8[q+1] << 8)) : u16be(u8, q);
+  const rd32 = q => le ? u32le(u8, q) : u32be(u8, q);
+  if(rd16(p + 2) !== 42) return 0;
+  const ifd = p + rd32(p + 4);
+  if(ifd + 2 > segEnd) return 0;
+  const cnt = rd16(ifd);
+  for(let i = 0; i < cnt; i++){
+    const e = ifd + 2 + i * 12;
+    if(e + 12 > segEnd) break;
+    if(rd16(e) === 0x0112) return rd16(e + 8);
+  }
+  return 0;
+}
+
+function stripJpegMetadata(u8){
+  if(u8.length < 4 || u8[0] !== 0xFF || u8[1] !== 0xD8) throw new Error('不是有效的 JPEG 文件');
+  const parts = [u8.subarray(0, 2)];
+  let p = 2, dropped = 0, keptOri = false;
+  const n = u8.length;
+  while(p + 1 < n){
+    if(u8[p] !== 0xFF) break;
+    const marker = u8[p+1];
+    if(marker === 0xFF){ p++; continue; }
+    if(marker === 0xD9){ parts.push(u8.subarray(p, p + 2)); p += 2; break; }
+    if(marker === 0xDA){ parts.push(u8.subarray(p, n)); p = n; break; }
+    if(marker >= 0xD0 && marker <= 0xD7){ parts.push(u8.subarray(p, p + 2)); p += 2; continue; }
+    if(marker === 0x01){ parts.push(u8.subarray(p, p + 2)); p += 2; continue; }
+    if(p + 4 > n) break;
+    const len = u16be(u8, p + 2);
+    if(len < 2 || p + 2 + len > n) break;
+    const segEnd = p + 2 + len;
+    const droppable = marker === 0xFE || (marker >= 0xE1 && marker <= 0xED) || marker === 0xEF;
+    if(droppable){
+      if(marker === 0xE1 && exifOrientation(u8, p, segEnd) > 1){
+        parts.push(u8.subarray(p, segEnd));
+        keptOri = true;
+        p = segEnd;
+        continue;
+      }
+      dropped += len + 2;
+      p = segEnd;
+      continue;
+    }
+    parts.push(u8.subarray(p, segEnd));
+    p = segEnd;
+  }
+  const tail = parts.slice(1).reduce((s, x) => s + x.length, 0) + 2;
+  if(dropped === 0) return { blob: new Blob([u8], { type: 'image/jpeg' }), changed: false, note: '这张 JPEG 没有可剥离的元数据' };
+  return {
+    blob: new Blob(parts, { type: 'image/jpeg' }),
+    changed: true,
+    note: '剥离元数据 ' + fmtBytes(dropped) + (keptOri ? '（含旋转信息，已保留）' : '')
+  };
+}
+
+function pngChunk(type, data){
+  const out = new Uint8Array(data.length + 12);
+  const dv = new DataView(out.buffer);
+  dv.setUint32(0, data.length, false);
+  for(let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+  out.set(data, 8);
+  dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)), false);
+  return out;
+}
+async function inflateZlib(data){
+  const ds = new DecompressionStream('deflate');
+  const w = ds.writable.getWriter();
+  w.write(data); w.close();
+  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+async function deflateZlib(data){
+  const cs = new CompressionStream('deflate');
+  const w = cs.writable.getWriter();
+  w.write(data); w.close();
+  return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+}
+function paeth(a, b, c){
+  const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+  if(pa <= pb && pa <= pc) return a;
+  if(pb <= pc) return b;
+  return c;
+}
+function pngRefilter(raw, width, height, bpp, stride){
+  const out = new Uint8Array(height * (stride + 1));
+  const bufs = [0,1,2,3,4].map(() => new Uint8Array(stride));
+  let prev = new Uint8Array(stride);
+  let cur = new Uint8Array(stride);
+  for(let y = 0; y < height; y++){
+    const off = y * (stride + 1);
+    const ft = raw[off];
+    for(let x = 0; x < stride; x++){
+      const v = raw[off + 1 + x];
+      const a = x >= bpp ? cur[x - bpp] : 0;
+      const b = prev[x];
+      const c = x >= bpp ? prev[x - bpp] : 0;
+      let r;
+      if(ft === 1) r = v + a;
+      else if(ft === 2) r = v + b;
+      else if(ft === 3) r = v + ((a + b) >> 1);
+      else if(ft === 4) r = v + paeth(a, b, c);
+      else r = v;
+      cur[x] = r & 0xFF;
+    }
+    let bestType = 0, bestScore = Infinity;
+    for(let t = 0; t < 5; t++){
+      const buf = bufs[t];
+      let score = 0;
+      for(let x = 0; x < stride; x++){
+        const a = x >= bpp ? cur[x - bpp] : 0;
+        const b = prev[x];
+        const c = x >= bpp ? prev[x - bpp] : 0;
+        let v;
+        if(t === 1) v = cur[x] - a;
+        else if(t === 2) v = cur[x] - b;
+        else if(t === 3) v = cur[x] - ((a + b) >> 1);
+        else if(t === 4) v = cur[x] - paeth(a, b, c);
+        else v = cur[x];
+        v &= 0xFF;
+        buf[x] = v;
+        score += v < 128 ? v : 256 - v;
+      }
+      if(score < bestScore){ bestScore = score; bestType = t; }
+    }
+    out[off] = bestType;
+    out.set(bufs[bestType], off + 1);
+    const tmp = prev; prev = cur; cur = tmp;
+  }
+  return out;
+}
+
+async function optimizePng(u8){
+  const sig = [0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A];
+  for(let i = 0; i < 8; i++) if(u8[i] !== sig[i]) throw new Error('不是有效的 PNG 文件');
+  const DROP = { tEXt: 1, zTXt: 1, iTXt: 1, tIME: 1, eXIf: 1 };
+  const chunks = [];
+  let p = 8, ihdr = null, idat = [], metaBytes = 0;
+  while(p + 8 <= u8.length){
+    const len = u32be(u8, p);
+    if(len > u8.length) break;
+    const type = String.fromCharCode(u8[p+4], u8[p+5], u8[p+6], u8[p+7]);
+    const ds = p + 8, de = ds + len;
+    if(de + 4 > u8.length) break;
+    const data = u8.subarray(ds, de);
+    if(type === 'IHDR') ihdr = data;
+    if(type === 'IDAT') idat.push(data);
+    if(DROP[type]) metaBytes += len + 12;
+    chunks.push({ type, data, drop: !!DROP[type] });
+    p = de + 4;
+    if(type === 'IEND') break;
+  }
+  if(!ihdr) throw new Error('PNG 文件损坏（缺少 IHDR）');
+
+  const width = u32be(ihdr, 0), height = u32be(ihdr, 4);
+  const bitDepth = ihdr[8], colorType = ihdr[9], compression = ihdr[10], interlace = ihdr[12];
+  const CH = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+  const channels = CH[colorType];
+  let newIdat = null, recompressed = false;
+  const canRe = compression === 0 && interlace === 0 && channels &&
+                width * height <= 16000000 && typeof CompressionStream !== 'undefined';
+  if(canRe){
+    try{
+      const raw = await inflateZlib(idat.length === 1 ? idat[0] : concatBytes(idat));
+      const bpp = Math.max(1, Math.ceil(channels * bitDepth / 8));
+      const stride = Math.ceil(width * channels * bitDepth / 8);
+      if(raw.length === height * (stride + 1)){
+        newIdat = await deflateZlib(pngRefilter(raw, width, height, bpp, stride));
+        recompressed = true;
+      }
+    }catch(e){ recompressed = false; }
+  }
+
+  const parts = [new Uint8Array(sig)];
+  let emitted = false;
+  for(const c of chunks){
+    if(c.type === 'IDAT'){
+      if(recompressed){
+        if(!emitted){ parts.push(pngChunk('IDAT', newIdat)); emitted = true; }
+      }else{
+        parts.push(pngChunk('IDAT', c.data));
+      }
+      continue;
+    }
+    if(c.drop) continue;
+    parts.push(pngChunk(c.type, c.data));
+  }
+  const blob = new Blob(parts, { type: 'image/png' });
+  if(blob.size >= u8.length){
+    return { blob: new Blob([u8], { type: 'image/png' }), changed: false, note: '已经是最优状态，未改动' };
+  }
+  const bits = [];
+  if(metaBytes) bits.push('剥离元数据 ' + fmtBytes(metaBytes));
+  if(recompressed) bits.push('重新无损压缩');
+  return { blob, changed: true, note: bits.join(' + ') || '重新无损压缩' };
+}
+function concatBytes(arrs){
+  let n = 0;
+  for(const a of arrs) n += a.length;
+  const out = new Uint8Array(n);
+  let o = 0;
+  for(const a of arrs){ out.set(a, o); o += a.length; }
+  return out;
+}
+function webpChunk(fourcc, data){
+  const pad = data.length % 2;
+  const out = new Uint8Array(8 + data.length + pad);
+  for(let i = 0; i < 4; i++) out[i] = fourcc.charCodeAt(i);
+  new DataView(out.buffer).setUint32(4, data.length, true);
+  out.set(data, 8);
+  return out;
+}
+function stripWebpMetadata(u8){
+  if(u8.length < 16) throw new Error('不是有效的 WebP 文件');
+  const chunks = [];
+  let p = 12, hasVp8x = false;
+  while(p + 8 <= u8.length){
+    const fourcc = String.fromCharCode(u8[p], u8[p+1], u8[p+2], u8[p+3]);
+    const size = u32le(u8, p + 4);
+    const ds = p + 8, de = ds + size;
+    if(de > u8.length) break;
+    const full = de + (size % 2);
+    chunks.push({ fourcc, start: p, end: Math.min(full, u8.length), ds, de, size });
+    if(fourcc === 'VP8X') hasVp8x = true;
+    p = full;
+  }
+  if(!hasVp8x) return { blob: new Blob([u8], { type: 'image/webp' }), changed: false, note: '这张 WebP 没有可剥离的元数据' };
+
+  const body = [];
+  let dropped = 0;
+  for(const c of chunks){
+    if(c.fourcc === 'EXIF' || c.fourcc === 'XMP'){ dropped += c.end - c.start; continue; }
+    if(c.fourcc === 'VP8X'){
+      const d = u8.slice(c.ds, c.de);
+      d[0] = d[0] & ~0x08 & ~0x04;
+      body.push(webpChunk('VP8X', d));
+      continue;
+    }
+    body.push(u8.subarray(c.start, c.end));
+  }
+  if(!dropped) return { blob: new Blob([u8], { type: 'image/webp' }), changed: false, note: '这张 WebP 没有可剥离的元数据' };
+
+  let bodyLen = 0;
+  for(const b of body) bodyLen += b.length;
+  const head = new Uint8Array(12);
+  head[0] = 0x52; head[1] = 0x49; head[2] = 0x46; head[3] = 0x46;
+  new DataView(head.buffer).setUint32(4, bodyLen + 4, true);
+  head[8] = 0x57; head[9] = 0x45; head[10] = 0x42; head[11] = 0x50;
+  return {
+    blob: new Blob([head, ...body], { type: 'image/webp' }),
+    changed: true,
+    note: '剥离元数据 ' + fmtBytes(dropped)
+  };
+}
+
+async function losslessCompress(file){
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  const kind = sniffFormat(u8);
+  if(kind === 'jpeg') return stripJpegMetadata(u8);
+  if(kind === 'png') return await optimizePng(u8);
+  if(kind === 'webp') return stripWebpMetadata(u8);
+  throw new Error('无损模式暂不支持这种格式（支持 JPG / PNG / WebP），请切到有损模式');
+}
+// ==== LOSSLESS-ENGINE-END ====
+
+function paramsHTML(p){
+  return `
+  <div class="field span-all">
+    <label>压缩方式</label>
+    <div class="seg" id="${p}-method">
+      <button type="button" data-m="lossy" class="on">有损压缩</button>
+      <button type="button" data-m="lossless">无损压缩</button>
+    </div>
+    <div class="inline-hint" id="${p}-method-hint">改画质 / 尺寸 / 格式，体积能大幅减小，但画质变化不可逆。</div>
+  </div>
+  <div id="${p}-lossy-fields">
+  <div class="field">
+    <label>输出格式</label>
+    <select id="${p}-format">
+      <option value="jpeg">JPG（兼容性最好）</option>
+      <option value="webp">WebP（体积最小）</option>
+      <option value="png">PNG（无损）</option>
+    </select>
+    <div class="inline-hint" id="${p}-fmt-hint">JPG 兼容性最好；不支持透明背景（透明处会变白）。</div>
+  </div>
+  <div class="field" id="${p}-q-wrap">
+    <label>画质</label>
+    <div class="range-row">
+      <input type="range" id="${p}-quality" min="1" max="100" value="80">
+      <input type="number" id="${p}-quality-num" min="1" max="100" value="80">
+    </div>
+    <div class="inline-hint">数值越低体积越小、画质越差。一般 70~85 就够用。</div>
+  </div>
+  <div class="field">
+    <label>尺寸</label>
+    <select id="${p}-dimmode">
+      <option value="keep">保持原尺寸</option>
+      <option value="percent">按百分比缩放</option>
+      <option value="setwidth">指定宽度（高度按比例）</option>
+      <option value="setheight">指定高度（宽度按比例）</option>
+    </select>
+  </div>
+  <div class="field hidden" id="${p}-percent-wrap">
+    <label>缩放比例（%）</label>
+    <input type="number" id="${p}-percent" min="1" max="100" value="70">
+  </div>
+  <div class="field hidden" id="${p}-setwidth-wrap">
+    <label>图片宽度（像素）</label>
+    <input type="number" id="${p}-setwidth" min="1" max="30000" value="800">
+    <div class="inline-hint">高度会按原图比例自动缩放。</div>
+  </div>
+  <div class="field hidden" id="${p}-setheight-wrap">
+    <label>图片高度（像素）</label>
+    <input type="number" id="${p}-setheight" min="1" max="30000" value="600">
+    <div class="inline-hint">宽度会按原图比例自动缩放。</div>
+  </div>
+  <div class="field">
+    <label class="checkline"><input type="checkbox" id="${p}-targetOn">压缩到指定大小</label>
+    <div class="target-inputs hidden" id="${p}-target-wrap">
+      <input type="number" id="${p}-targetVal" min="1" value="500">
+      <select id="${p}-targetUnit"><option value="KB">KB</option><option value="MB">MB</option></select>
+    </div>
+    <div class="inline-hint">开启后自动多轮尝试，压到不超过这个体积为止（体积不够小时会自动缩小尺寸）。</div>
+  </div>
+  </div>
+  <div class="note-box span-all hidden" id="${p}-lossless-hint">
+    <b>画质一个像素都不改</b>，格式、尺寸也保持原样，只做两件事：<br>
+    ① 剥离图片里藏的元数据（EXIF、生成参数、缩略图、XMP）<br>
+    ② PNG 额外做一次真正的无损重压<br>
+    <span style="color:#6b7280">收益看原图：PNG 通常省 5%~25%；JPG/WebP 主要靠剥元数据，省几 KB 到几百 KB 不等。</span>
+  </div>`;
+}
+
+function readParams(p){
+  const g = id => document.getElementById(p + '-' + id);
+  const on = document.querySelector('#' + p + '-method button.on');
+  const method = on ? on.dataset.m : 'lossy';
+  if(method === 'lossless') return { method };
+  const format = 'image/' + g('format').value;
+  const quality = Math.max(1, Math.min(100, parseInt(g('quality').value, 10) || 80)) / 100;
+  const mode = g('dimmode').value;
+  const percent = parseInt(g('percent').value, 10) || 100;
+  const setW = parseInt(g('setwidth').value, 10) || 0;
+  const setH = parseInt(g('setheight').value, 10) || 0;
+  let targetBytes = 0;
+  if(g('targetOn').checked){
+    const v = parseFloat(g('targetVal').value);
+    if(v > 0) targetBytes = Math.round(v * (g('targetUnit').value === 'MB' ? MB : KB));
+  }
+  return { method, format, quality, mode, percent, setW, setH, targetBytes };
+}
+
+function bindParams(p){
+  const g = id => document.getElementById(p + '-' + id);
+  document.querySelectorAll('#' + p + '-method button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#' + p + '-method button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      const ls = b.dataset.m === 'lossless';
+      g('lossy-fields').classList.toggle('hidden', ls);
+      g('lossless-hint').classList.toggle('hidden', !ls);
+      g('method-hint').textContent = ls
+        ? '画质 100% 不变，格式和尺寸也不动，只挤掉多余数据。'
+        : '改画质 / 尺寸 / 格式，体积能大幅减小，但画质变化不可逆。';
+    });
+  });
+  const syncQ = () => { g('q-val') && (g('q-val').textContent = g('quality').value); };
+  g('quality').addEventListener('input', () => { g('quality-num').value = g('quality').value; });
+  g('quality-num').addEventListener('input', () => {
+    let v = Math.max(1, Math.min(100, parseInt(g('quality-num').value, 10) || 80));
+    g('quality').value = v;
+  });
+  g('dimmode').addEventListener('change', () => {
+    const v = g('dimmode').value;
+    g('percent-wrap').classList.toggle('hidden', v !== 'percent');
+    g('setwidth-wrap').classList.toggle('hidden', v !== 'setwidth');
+    g('setheight-wrap').classList.toggle('hidden', v !== 'setheight');
+  });
+  g('targetOn').addEventListener('change', () => {
+    g('target-wrap').classList.toggle('hidden', !g('targetOn').checked);
+    if(g('targetOn').checked && g('format').value === 'png'){
+      g('fmt-hint').textContent = '注意：PNG 无损、压不动质量，目标大小只能靠缩小尺寸实现。';
+    }
+  });
+  g('format').addEventListener('change', () => {
+    const f = g('format').value;
+    g('q-wrap').classList.toggle('hidden', f === 'png');
+    if(f === 'png'){
+      g('fmt-hint').textContent = 'PNG 是无损格式，没有"画质"参数，体积主要靠缩尺寸。';
+    } else if(f === 'webp'){
+      g('fmt-hint').textContent = 'WebP 体积通常最小，画质接近 JPG。';
+    } else {
+      g('fmt-hint').textContent = 'JPG 兼容性最好；不支持透明背景（透明处会变白）。';
+    }
+  });
+  syncQ();
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('panel-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+let sFile = null, sImg = null, sOriginUrl = null, sResultUrl = null, sResult = null;
+
+async function setSingle(file){
+  sFile = file; sResult = null;
+  try{
+    sImg = await loadImageFromFile(file);
+  }catch(e){
+    alert('这张图片读不了：' + e.message);
+    return;
+  }
+  if(sOriginUrl) URL.revokeObjectURL(sOriginUrl);
+  sOriginUrl = URL.createObjectURL(file);
+  $('s-origin-img').src = sOriginUrl;
+  const fmt = (file.type || '').replace('image/', '').toUpperCase() || baseName(file.name).split('.').pop().toUpperCase();
+  $('s-origin-info').innerHTML =
+    '<b>' + esc(file.name) + '</b><br>' +
+    '格式：' + (fmt || '未知') + '<br>' +
+    '尺寸：' + fmtDim(sImg.naturalWidth, sImg.naturalHeight) + '<br>' +
+    '体积：<b>' + fmtBytes(file.size) + '</b>';
+  $('s-work').classList.remove('hidden');
+  $('s-result-box').innerHTML = '<div class="ph">压缩后的图片会显示在这里</div>';
+  $('s-result-info').innerHTML = '';
+  $('s-download').classList.add('hidden');
+  $('s-drop').classList.add('hidden');
+}
+
+$('s-drop').addEventListener('click', () => $('s-file').click());
+$('s-file').addEventListener('change', e => { if(e.target.files[0]) setSingle(e.target.files[0]); });
+setupDrop($('s-drop'), files => { if(files[0]) setSingle(files[0]); });
+
+$('s-reset').addEventListener('click', () => {
+  $('s-work').classList.add('hidden');
+  $('s-drop').classList.remove('hidden');
+  $('s-file').value = '';
+  sFile = sImg = sResult = null;
+});
+
+async function processOne(file, opt){
+  if(opt.method === 'lossless'){
+    const r = await losslessCompress(file);
+    const img = await loadImageFromFile(file);
+    return { blob: r.blob, w: img.naturalWidth, h: img.naturalHeight,
+             ext: (file.name.split('.').pop() || 'jpg').toLowerCase(),
+             note: r.note, changed: r.changed, lossless: true };
+  }
+  const img = await loadImageFromFile(file);
+  const r = await compressImage(img, opt);
+  return { blob: r.blob, w: r.w, h: r.h, ext: extOf(opt.format), note: '', changed: true, lossless: false };
+}
+
+$('s-run').addEventListener('click', async () => {
+  if(!sImg) return;
+  const btn = $('s-run');
+  const opt = readParams('s');
+  btn.disabled = true;
+  btn.textContent = opt.method === 'lossless' ? '无损优化中…' : '压缩中…（目标大小模式会多试几轮）';
+  try{
+    const r = await processOne(sFile, opt);
+    sResult = { blob: r.blob, ext: r.ext, lossless: r.lossless };
+    if(sResultUrl) URL.revokeObjectURL(sResultUrl);
+    sResultUrl = URL.createObjectURL(r.blob);
+    $('s-result-box').innerHTML = '<img id="s-result-img" alt="压缩结果">';
+    $('s-result-img').src = sResultUrl;
+    if(r.lossless){
+      $('s-result-info').innerHTML =
+        '格式：' + fileFormatLabel(sFile) + '（画质未改动）<br>' +
+        '尺寸：' + fmtDim(r.w, r.h) + '（未改动）<br>' +
+        '体积：<b>' + fmtBytes(r.blob.size) + '</b> ' + diffHTML(sFile.size, r.blob.size) + '<br>' +
+        '原图：' + fmtBytes(sFile.size) + '<br>' +
+        '<span style="color:#6b7280">' + esc(r.note) + '</span>';
+    }else{
+      $('s-result-info').innerHTML =
+        '格式：' + typeLabel(opt.format) + '<br>' +
+        '尺寸：' + fmtDim(r.w, r.h) + '<br>' +
+        '体积：<b>' + fmtBytes(r.blob.size) + '</b> ' + pctHTML(sFile.size, r.blob.size) + '<br>' +
+        '原图：' + fmtBytes(sFile.size);
+    }
+    $('s-download').classList.remove('hidden');
+    btn.textContent = '重新压缩';
+  }catch(err){
+    alert('处理失败：' + err.message);
+    btn.textContent = '开始压缩';
+  }
+  btn.disabled = false;
+});
+
+$('s-download').addEventListener('click', () => {
+  if(!sResult) return;
+  downloadBlob(sResult.blob, baseName(sFile.name) + '.' + sResult.ext);
+});
+
+let bItems = [];
+
+function renderBatch(){
+  $('b-count').textContent = bItems.length ? ('共 ' + bItems.length + ' 张') : '';
+  $('b-list').innerHTML = bItems.map(it => {
+    const thumb = it.thumb
+      ? '<img class="thumb" src="' + it.thumb + '" alt="">'
+      : '<div class="thumb"></div>';
+    let nums;
+    if(it.status === '完成'){
+      nums = fmtBytes(it.file.size) + ' → ' + fmtBytes(it.blob.size) +
+             ' ' + diffHTML(it.file.size, it.blob.size) + ' · ' + fmtDim(it.w, it.h) +
+             (it.lossless ? ' · 无损' : '');
+    } else if(it.status === '失败'){
+      nums = esc(it.error || '处理失败');
+    } else {
+      nums = fmtBytes(it.file.size);
+    }
+    const cls = it.status === '完成' ? 'ok' : it.status === '失败' ? 'err' : '';
+    return '<div class="item">' + thumb + '<div class="meta"><div class="name">' + esc(it.file.name) +
+           '</div><div class="nums">' + nums + '</div></div><div class="st ' + cls + '">' + it.status + '</div></div>';
+  }).join('');
+}
+
+async function addBatch(files){
+  const imgs = [...files].filter(f => (f.type || '').startsWith('image/'));
+  if(!imgs.length){
+    alert('没有可处理的图片（只支持图片文件）');
+    return;
+  }
+  for(const f of imgs) bItems.push({ file: f, status: '等待' });
+  $('b-work').classList.remove('hidden');
+  $('b-zip').classList.add('hidden');
+  $('b-drop').classList.add('compact');
+  $('b-drop').querySelector('p').textContent = '＋ 继续添加图片（点击或拖入）';
+  renderBatch();
+}
+
+$('b-drop').addEventListener('click', () => $('b-file').click());
+$('b-file').addEventListener('change', e => {
+  if(e.target.files.length) addBatch(e.target.files);
+  e.target.value = '';
+});
+setupDrop($('b-drop'), files => addBatch(files));
+
+$('b-clear').addEventListener('click', () => {
+  bItems = [];
+  $('b-work').classList.add('hidden');
+  $('b-zip').classList.add('hidden');
+  $('b-progress').classList.add('hidden');
+  $('b-drop').classList.remove('compact');
+  $('b-drop').querySelector('p').textContent = '点击选择多张图片，或把图片（可多选 / 整个文件夹）拖到这里';
+  renderBatch();
+});
+
+$('b-run').addEventListener('click', async () => {
+  if(!bItems.length) return;
+  const btn = $('b-run');
+  btn.disabled = true;
+  $('b-zip').classList.add('hidden');
+  const opt = readParams('b');
+  btn.textContent = opt.method === 'lossless' ? '无损优化中…' : '压缩中…';
+  const list = bItems.slice();
+  for(const it of list){ it.status = '等待'; it.blob = null; it.thumb = ''; it.error = ''; }
+  renderBatch();
+  $('b-progress').classList.remove('hidden');
+  const verb = opt.method === 'lossless' ? '无损优化' : '压缩';
+  let ok = 0, fail = 0;
+  for(let i = 0; i < list.length; i++){
+    const it = list[i];
+    it.status = '处理中';
+    renderBatch();
+    $('b-fill').style.width = ((i / list.length) * 100).toFixed(1) + '%';
+    $('b-text').textContent = '正在' + verb + ' ' + (i + 1) + ' / ' + list.length + '：' + it.file.name;
+    try{
+      const r = await processOne(it.file, opt);
+      it.blob = r.blob;
+      it.w = r.w; it.h = r.h;
+      it.ext = r.ext;
+      it.lossless = r.lossless;
+      it.thumb = await makeThumb(r.blob, 50);
+      it.status = '完成';
+      ok++;
+    }catch(err){
+      it.status = '失败';
+      it.error = err.message;
+      fail++;
+    }
+    renderBatch();
+    await new Promise(r => setTimeout(r, 0));
+  }
+  $('b-fill').style.width = '100%';
+  $('b-text').textContent = '完成：成功 ' + ok + ' 张' + (fail ? '，失败 ' + fail + ' 张' : '');
+  if(ok) $('b-zip').classList.remove('hidden');
+  btn.textContent = '开始批量压缩';
+  btn.disabled = false;
+});
+
+$('b-zip').addEventListener('click', async () => {
+  const done = bItems.filter(it => it.status === '完成' && it.blob);
+  if(!done.length) return;
+  const btn = $('b-zip');
+  btn.disabled = true;
+  btn.textContent = '打包中…';
+  try{
+    const used = new Set();
+    const files = [];
+    for(const it of done){
+      const base = baseName(it.file.name);
+      const ext = it.ext || 'jpg';
+      let name = base + '.' + ext;
+      let n = 1;
+      while(used.has(name)) name = base + '(' + (n++) + ').' + ext;
+      used.add(name);
+      const data = new Uint8Array(await it.blob.arrayBuffer());
+      files.push({ name, data });
+    }
+    const zip = buildZip(files);
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    downloadBlob(zip, 'compressed_' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes()) + '.zip');
+    btn.textContent = '打包下载 zip';
+  }catch(err){
+    alert('打包失败：' + err.message);
+    btn.textContent = '打包下载 zip';
+  }
+  btn.disabled = false;
+});
+
+$('s-params').innerHTML = paramsHTML('s');
+$('b-params').innerHTML = paramsHTML('b');
+bindParams('s');
+bindParams('b');
+</script>
+</body>
+</html>
